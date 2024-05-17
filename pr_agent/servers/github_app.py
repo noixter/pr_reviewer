@@ -59,7 +59,6 @@ async def handle_marketplace_webhooks(request: Request, response: Response):
 
 
 async def get_body(request):
-    breakpoint()
     try:
         body = await request.json()
     except Exception as e:

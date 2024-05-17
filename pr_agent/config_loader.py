@@ -1,6 +1,6 @@
 from os.path import abspath, dirname, join
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from dynaconf import Dynaconf
 from starlette_context import context
@@ -41,11 +41,11 @@ def get_settings():
 
 
 # Add local configuration from pyproject.toml of the project being reviewed
-def _find_repository_root() -> Path:
+def _find_repository_root(start_folder: str = 'data') -> Union[Path, None]:
     """
     Identify project root directory by recursively searching for the .git directory in the parent directories.
     """
-    cwd = Path.cwd().resolve()
+    cwd = Path(start_folder).resolve()
     no_way_up = False
     while not no_way_up:
         no_way_up = cwd == cwd.parent

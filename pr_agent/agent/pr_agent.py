@@ -54,6 +54,7 @@ class PRAgent:
 
     async def handle_request(self, pr_url, request, notify=None) -> bool:
         # First, apply repo specific settings if exists
+        breakpoint()
         apply_repo_settings(pr_url)
 
         # Then, apply user specific settings if exists
