@@ -148,15 +148,13 @@ class LocalGitProvider(GitProvider):
             with open(f'{suggestions_path}', 'w') as file:
                 file.write('## Code Suggestions\n\n')
                 for code_suggestion in code_suggestions:
-                    content = f"""
+                    content = textwrap.dedent(f"""
                         [{code_suggestion["relevant_file"]}]({code_suggestion["relevant_file"]})  
-                        **lines {code_suggestion['relevant_lines_start']} to
-                        {code_suggestion['relevant_lines_end']}**
-                          
+                        *lines {code_suggestion['relevant_lines_start']} to
+                        {code_suggestion['relevant_lines_end']}*
                         {code_suggestion['body']}
-                        
-                    """
-                    file.write(content.strip())
+                    """)
+                    file.write(f'{content}\n')
         except FileNotFoundError:
             get_logger().exception(f'Failed to write suggestions on path {suggestions_path}')
             return False
