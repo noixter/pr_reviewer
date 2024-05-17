@@ -186,8 +186,8 @@ pr_commands = [
 
 [local]
 # LocalGitProvider settings - uncomment to use paths other than default
-description_path= "app/data/describe.md"
-review_path= "app/data/review.md"
+description_path= "/app/data/describe.md"
+review_path= "/app/data/review.md"
 
 [gerrit]
 # endpoint to the gerrit service
