@@ -148,9 +148,9 @@ class LocalGitProvider(GitProvider):
                 file.write('## Code Suggestions\n\n')
                 for code_suggestion in code_suggestions:
                     file.write(f"""
-                    [{code_suggestion["relevant_file"]}]({code_suggestion["relevant_file"]})\n\n
-                    lines {code_suggestion['relevant_lines_start']} to
-                    **{code_suggestion['relevant_lines_end']}**\n\n
+                    [{code_suggestion["relevant_file"]}]({code_suggestion["relevant_file"]})  
+                    **lines {code_suggestion['relevant_lines_start']} to
+                    {code_suggestion['relevant_lines_end']}**  
                     {code_suggestion['body']}\n\n
                     """)
         except FileNotFoundError:

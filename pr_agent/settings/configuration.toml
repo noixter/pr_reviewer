@@ -78,12 +78,12 @@ enable_help_text=false
 
 
 [pr_code_suggestions] # /improve #
-max_context_tokens=8000
+max_context_tokens=32000
 num_code_suggestions=4
 commitable_code_suggestions = false
 extra_instructions = ""
 rank_suggestions = false
-enable_help_text=false
+enable_help_text = false
 persistent_comment=false
 # suggestions scoring
 self_reflect_on_suggestions=true
