@@ -277,17 +277,23 @@ class PRCodeSuggestions:
                 content = d['suggestion_content'].rstrip()
                 new_code_snippet = d['improved_code'].rstrip()
                 label = d['label'].strip()
+                language = d['language']
 
                 if new_code_snippet:
                     new_code_snippet = self.dedent_code(relevant_file, relevant_lines_start, new_code_snippet)
 
                 if d.get('score'):
                     body = f"**Suggestion:** {content} [{label}, importance: {d.get('score')}]\n```suggestion\n" + new_code_snippet + "\n```"
+                elif get_settings().get('CONFIG.CLI_MODE', False):
+                    body = f"**Suggestion:** {content} [{label}]\n```{language}\n" + new_code_snippet + "\n```"
                 else:
                     body = f"**Suggestion:** {content} [{label}]\n```suggestion\n" + new_code_snippet + "\n```"
-                code_suggestions.append({'body': body, 'relevant_file': relevant_file,
-                                             'relevant_lines_start': relevant_lines_start,
-                                             'relevant_lines_end': relevant_lines_end})
+                code_suggestions.append({
+                    'body': body,
+                    'relevant_file': relevant_file,
+                    'relevant_lines_start': relevant_lines_start,
+                    'relevant_lines_end': relevant_lines_end
+                })
             except Exception:
                 get_logger().info(f"Could not parse suggestion: {d}")
 

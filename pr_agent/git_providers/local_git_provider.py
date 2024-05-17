@@ -142,17 +142,24 @@ class LocalGitProvider(GitProvider):
         raise NotImplementedError('Publishing code suggestions is not implemented for the local git provider')
 
     def publish_code_suggestions(self, code_suggestions: list) -> bool:
-        with open('/app/data/suggestions.md', 'w') as file:
-            file.write('## Code Suggestions')
-            for code_suggestion in code_suggestions:
-                file.write(f'#### {code_suggestion["relevant_file"]}')
-                file.write(f'```{code_suggestion["language"]}')
-                file.write(f'Existing Code:')
-                file.write(f'{code_suggestion["existing_code"]}')
-                file.write(f'Improved Code:')
-                file.write(f'{code_suggestion["improved_code"]}')
-                file.write('```')
-                file.write(code_suggestion['one_sentence_summary'])
+        suggestions_path = get_settings().get("LOCAL.SUGGESTION_PATH")
+        try:
+            with open(f'{suggestions_path}', 'w') as file:
+                file.write('## Code Suggestions\n\n')
+                for code_suggestion in code_suggestions:
+                    file.write(f"""
+                        [{code_suggestion["relevant_file"]}]({code_suggestion["relevant_file"]})\n\n
+                        lines {code_suggestion['relevant_lines_start']} to
+                        **{code_suggestion['relevant_lines_end']}**\n\n
+                        {code_suggestion['body']}\n\n
+                    """)
+        except FileNotFoundError:
+            get_logger().exception(f'Failed to write suggestions on path {suggestions_path}')
+            return False
+        except PermissionError:
+            get_logger().exception(f'No permissions to write suggestions on path {suggestions_path}')
+            return False
+        return True
 
     def publish_labels(self, labels):
         pass  # Not applicable to the local git provider, but required by the interface
