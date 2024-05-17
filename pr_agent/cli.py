@@ -50,6 +50,7 @@ def set_parser():
     parser.add_argument('rest', nargs=argparse.REMAINDER, default=[])
     return parser
 
+
 def run_command(pr_url, command):
     # Preparing the command
     run_command_str = f"--pr_url={pr_url} {command.lstrip('/')}"
@@ -57,6 +58,7 @@ def run_command(pr_url, command):
 
     # Run the command. Feedback will appear in GitHub PR comments
     run(args=args)
+
 
 def run(inargs=None, args=None):
     parser = set_parser()

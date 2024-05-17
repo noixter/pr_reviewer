@@ -24,6 +24,7 @@ ADDED_FILES_ = "Additional added files (insufficient token budget to process):\n
 OUTPUT_BUFFER_TOKENS_SOFT_THRESHOLD = 1000
 OUTPUT_BUFFER_TOKENS_HARD_THRESHOLD = 600
 
+
 def get_pr_diff(git_provider: GitProvider, token_handler: TokenHandler, model: str,
                 add_line_numbers_to_hunks: bool = False, disable_extra_lines: bool = False) -> str:
     """
@@ -43,7 +44,7 @@ def get_pr_diff(git_provider: GitProvider, token_handler: TokenHandler, model: s
     Returns:
         str: A string with the diff of the pull request, applying diff minimization techniques if needed.
     """
-
+    breakpoint()
     if disable_extra_lines:
         PATCH_EXTRA_LINES = 0
     else:

@@ -46,6 +46,7 @@ command2class = {
 
 commands = list(command2class.keys())
 
+
 class PRAgent:
     def __init__(self, ai_handler: partial[BaseAiHandler,] = LiteLLMAIHandler):
         self.ai_handler = ai_handler # will be initialized in run_action
@@ -95,3 +96,12 @@ class PRAgent:
                 return False
             return True
 
+
+class PRAgentCLI:
+
+    def __init__(self, ai_handler: partial[BaseAiHandler,] = LiteLLMAIHandler):
+        self.ai_handler = ai_handler  # will be initialized in run_action
+        self.forbidden_cli_args = ['enable_auto_approval']
+
+    async def handle_request(self, pr_url, request, notify=None) -> bool:
+        pass

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class BaseAiHandler(ABC):
     """
     This class defines the interface for an AI handler to be used by the PR Agents.  

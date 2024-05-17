@@ -59,9 +59,10 @@ class OpenAIHandler(BaseAiHandler):
         except (APIError, Timeout, TryAgain) as e:
             get_logger().error("Error during OpenAI inference: ", e)
             raise
-        except (RateLimitError) as e:
+        except RateLimitError as e:
             get_logger().error("Rate limit error during OpenAI inference: ", e)
             raise
-        except (Exception) as e:
+        except Exception as e:
             get_logger().error("Unknown error during OpenAI inference: ", e)
-            raise TryAgain from e        
+            raise TryAgain from e
+

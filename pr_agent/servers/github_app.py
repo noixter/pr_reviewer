@@ -59,6 +59,7 @@ async def handle_marketplace_webhooks(request: Request, response: Response):
 
 
 async def get_body(request):
+    breakpoint()
     try:
         body = await request.json()
     except Exception as e:
@@ -75,13 +76,16 @@ async def get_body(request):
 _duplicate_push_triggers = DefaultDictWithTimeout(ttl=get_settings().github_app.push_trigger_pending_tasks_ttl)
 _pending_task_duplicate_push_conditions = DefaultDictWithTimeout(asyncio.locks.Condition, ttl=get_settings().github_app.push_trigger_pending_tasks_ttl)
 
-async def handle_comments_on_pr(body: Dict[str, Any],
-                                event: str,
-                                sender: str,
-                                sender_id: str,
-                                action: str,
-                                log_context: Dict[str, Any],
-                                agent: PRAgent):
+
+async def handle_comments_on_pr(
+    body: Dict[str, Any],
+    event: str,
+    sender: str,
+    sender_id: str,
+    action: str,
+    log_context: Dict[str, Any],
+    agent: PRAgent
+):
     if "comment" not in body:
         return {}
     comment_body = body.get("comment", {}).get("body")
@@ -355,6 +359,7 @@ app.include_router(router)
 
 def start():
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", "3000")))
+
 
 if __name__ == '__main__':
     start()

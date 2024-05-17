@@ -1,6 +1,6 @@
 from collections import Counter
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from git import Repo
 
@@ -28,6 +28,18 @@ class LocalGitProvider(GitProvider):
     Instead of providing a PR url, the user provides a local branch path to generate a diff-patch.
     For the MVP it only supports the /review and /describe capabilities.
     """
+
+    def get_repo_settings(self):
+        pass
+
+    def add_eyes_reaction(self, issue_comment_id: int, disable_eyes: bool = False) -> Optional[int]:
+        pass
+
+    def remove_reaction(self, issue_comment_id: int, reaction_id: int) -> bool:
+        pass
+
+    def get_commit_messages(self):
+        pass
 
     def __init__(self, target_branch_name, incremental=False):
         self.repo_path = _find_repository_root()
