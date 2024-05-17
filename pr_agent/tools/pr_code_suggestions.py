@@ -282,10 +282,10 @@ class PRCodeSuggestions:
                 if new_code_snippet:
                     new_code_snippet = self.dedent_code(relevant_file, relevant_lines_start, new_code_snippet)
 
-                if d.get('score'):
-                    body = f"**Suggestion:** {content} [{label}, importance: {d.get('score')}]\n```suggestion\n" + new_code_snippet + "\n```"
-                elif get_settings().get('CONFIG.CLI_MODE', False):
+                if get_settings().get('CONFIG.CLI_MODE', False):
                     body = f"**Suggestion:** {content} [{label}]\n```{language}\n" + new_code_snippet + "\n```"
+                elif d.get('score'):
+                    body = f"**Suggestion:** {content} [{label}, importance: {d.get('score')}]\n```suggestion\n" + new_code_snippet + "\n```"
                 else:
                     body = f"**Suggestion:** {content} [{label}]\n```suggestion\n" + new_code_snippet + "\n```"
                 code_suggestions.append({
