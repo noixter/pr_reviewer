@@ -142,7 +142,17 @@ class LocalGitProvider(GitProvider):
         raise NotImplementedError('Publishing code suggestions is not implemented for the local git provider')
 
     def publish_code_suggestions(self, code_suggestions: list) -> bool:
-        raise NotImplementedError('Publishing code suggestions is not implemented for the local git provider')
+        with open('/app/data/suggestions.md', 'w') as file:
+            file.write('## Code Suggestions')
+            for code_suggestion in code_suggestions:
+                file.write(f'#### {code_suggestion["relevant_file"]}')
+                file.write(f'```{code_suggestion["language"]}')
+                file.write(f'Existing Code:')
+                file.write(f'{code_suggestion["existing_code"]}')
+                file.write(f'Improved Code:')
+                file.write(f'{code_suggestion["improved_code"]}')
+                file.write('```')
+                file.write(code_suggestion['one_sentence_summary'])
 
     def publish_labels(self, labels):
         pass  # Not applicable to the local git provider, but required by the interface
