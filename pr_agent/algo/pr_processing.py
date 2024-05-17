@@ -44,7 +44,6 @@ def get_pr_diff(git_provider: GitProvider, token_handler: TokenHandler, model: s
     Returns:
         str: A string with the diff of the pull request, applying diff minimization techniques if needed.
     """
-    breakpoint()
     if disable_extra_lines:
         PATCH_EXTRA_LINES = 0
     else:
