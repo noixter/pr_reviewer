@@ -75,7 +75,6 @@ class LocalGitProvider(GitProvider):
         return True
 
     def get_diff_files(self) -> list[FilePatchInfo]:
-        breakpoint()
         diffs = self.repo.head.commit.diff(
             self.repo.merge_base(self.repo.head, self.repo.branches[self.target_branch_name]),
             create_patch=True,
@@ -190,4 +189,4 @@ class LocalGitProvider(GitProvider):
         raise NotImplementedError('Getting issue comments is not implemented for the local git provider')
 
     def get_pr_labels(self, update=False):
-        raise NotImplementedError('Getting labels is not implemented for the local git provider')
+        return []

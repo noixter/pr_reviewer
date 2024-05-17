@@ -10,3 +10,5 @@ docs/.cache/
 
 *.pem
 .python-version
+describe.md
+review.md
