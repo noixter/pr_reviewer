@@ -3,14 +3,16 @@ from datetime import date
 from functools import partial
 from time import sleep
 from typing import Tuple
+
 from jinja2 import Environment, StrictUndefined
+
 from pr_agent.algo.ai_handlers.base_ai_handler import BaseAiHandler
 from pr_agent.algo.ai_handlers.litellm_ai_handler import LiteLLMAIHandler
 from pr_agent.algo.pr_processing import get_pr_diff, retry_with_fallback_models
 from pr_agent.algo.token_handler import TokenHandler
 from pr_agent.algo.utils import ModelType
 from pr_agent.config_loader import get_settings
-from pr_agent.git_providers import get_git_provider, GithubProvider
+from pr_agent.git_providers import GithubProvider, get_git_provider
 from pr_agent.git_providers.git_provider import get_main_pr_language
 from pr_agent.log import get_logger
 
@@ -19,11 +21,8 @@ CHANGELOG_LINES = 50
 
 class PRUpdateChangelog:
     def __init__(self, pr_url: str, cli_mode=False, args=None, ai_handler: partial[BaseAiHandler,] = LiteLLMAIHandler):
-
         self.git_provider = get_git_provider()(pr_url)
-        self.main_language = get_main_pr_language(
-            self.git_provider.get_languages(), self.git_provider.get_files()
-        )
+        self.main_language = get_main_pr_language(self.git_provider.get_languages(), self.git_provider.get_files())
         self.commit_changelog = get_settings().pr_update_changelog.push_changelog_changes
         self._get_changlog_file()  # self.changelog_file_str
 
@@ -44,24 +43,26 @@ class PRUpdateChangelog:
             "extra_instructions": get_settings().pr_update_changelog.extra_instructions,
             "commit_messages_str": self.git_provider.get_commit_messages(),
         }
-        self.token_handler = TokenHandler(self.git_provider.pr,
-                                          self.vars,
-                                          get_settings().pr_update_changelog_prompt.system,
-                                          get_settings().pr_update_changelog_prompt.user)
+        self.token_handler = TokenHandler(
+            self.git_provider.pr,
+            self.vars,
+            get_settings().pr_update_changelog_prompt.system,
+            get_settings().pr_update_changelog_prompt.user,
+        )
 
     async def run(self):
-        get_logger().info('Updating the changelog...')
-        relevant_configs = {'pr_update_changelog': dict(get_settings().pr_update_changelog),
-                            'config': dict(get_settings().config)}
+        get_logger().info("Updating the changelog...")
+        relevant_configs = {
+            "pr_update_changelog": dict(get_settings().pr_update_changelog),
+            "config": dict(get_settings().config),
+        }
         get_logger().debug("Relevant configs", artifacts=relevant_configs)
 
         # currently only GitHub is supported for pushing changelog changes
         if get_settings().pr_update_changelog.push_changelog_changes and not hasattr(
             self.git_provider, "create_or_update_pr_file"
         ):
-            get_logger().error(
-                "Pushing changelog changes is not currently supported for this code platform"
-            )
+            get_logger().error("Pushing changelog changes is not currently supported for this code platform")
             if get_settings().config.publish_output:
                 self.git_provider.publish_comment(
                     "Pushing changelog changes is not currently supported for this code platform"
@@ -98,8 +99,9 @@ class PRUpdateChangelog:
         environment = Environment(undefined=StrictUndefined)
         system_prompt = environment.from_string(get_settings().pr_update_changelog_prompt.system).render(variables)
         user_prompt = environment.from_string(get_settings().pr_update_changelog_prompt.user).render(variables)
-        response, finish_reason = await self.ai_handler.chat_completion(model=model, temperature=0.2,
-                                                                        system=system_prompt, user=user_prompt)
+        response, finish_reason = await self.ai_handler.chat_completion(
+            model=model, temperature=0.2, system=system_prompt, user=user_prompt
+        )
 
         return response
 
@@ -115,8 +117,10 @@ class PRUpdateChangelog:
             new_file_content = answer
 
         if not self.commit_changelog:
-            answer += "\n\n\n>to commit the new content to the CHANGELOG.md file, please type:" \
-                      "\n>'/update_changelog --pr_update_changelog.push_changelog_changes=true'\n"
+            answer += (
+                "\n\n\n>to commit the new content to the CHANGELOG.md file, please type:"
+                "\n>'/update_changelog --pr_update_changelog.push_changelog_changes=true'\n"
+            )
 
         return new_file_content, answer
 
@@ -144,8 +148,7 @@ class PRUpdateChangelog:
             self.git_provider.publish_comment(f"**Changelog updates: 🔄**\n\n{answer}")
 
     def _get_default_changelog(self):
-        example_changelog = \
-"""
+        example_changelog = """
 Example:
 ## <current_date>
 

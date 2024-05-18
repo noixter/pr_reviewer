@@ -18,7 +18,7 @@ def is_true(value: Union[str, bool]) -> bool:
     if isinstance(value, bool):
         return value
     if isinstance(value, str):
-        return value.lower() == 'true'
+        return value.lower() == "true"
     return False
 
 
@@ -32,11 +32,11 @@ def get_setting_or_env(key: str, default: Union[str, bool] = None) -> Union[str,
 
 async def run_action():
     # Get environment variables
-    GITHUB_EVENT_NAME = os.environ.get('GITHUB_EVENT_NAME')
-    GITHUB_EVENT_PATH = os.environ.get('GITHUB_EVENT_PATH')
-    OPENAI_KEY = os.environ.get('OPENAI_KEY') or os.environ.get('OPENAI.KEY')
-    OPENAI_ORG = os.environ.get('OPENAI_ORG') or os.environ.get('OPENAI.ORG')
-    GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
+    GITHUB_EVENT_NAME = os.environ.get("GITHUB_EVENT_NAME")
+    GITHUB_EVENT_PATH = os.environ.get("GITHUB_EVENT_PATH")
+    OPENAI_KEY = os.environ.get("OPENAI_KEY") or os.environ.get("OPENAI.KEY")
+    OPENAI_ORG = os.environ.get("OPENAI_ORG") or os.environ.get("OPENAI.ORG")
+    GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
     get_settings().set("CONFIG.PUBLISH_OUTPUT_PROGRESS", False)
 
     # Check if required environment variables are set
@@ -65,7 +65,7 @@ async def run_action():
 
     # Load the event payload
     try:
-        with open(GITHUB_EVENT_PATH, 'r') as f:
+        with open(GITHUB_EVENT_PATH, "r") as f:
             event_payload = json.load(f)
     except json.decoder.JSONDecodeError as e:
         print(f"Failed to parse JSON: {e}")
@@ -114,7 +114,7 @@ async def run_action():
             comment_body = event_payload.get("comment", {}).get("body")
             try:
                 if GITHUB_EVENT_NAME == "pull_request_review_comment":
-                    if '/ask' in comment_body:
+                    if "/ask" in comment_body:
                         comment_body = handle_line_comments(event_payload, comment_body)
             except Exception as e:
                 get_logger().error(f"Failed to handle line comments: {e}")
@@ -126,7 +126,7 @@ async def run_action():
                 if event_payload.get("issue", {}).get("pull_request"):
                     url = event_payload.get("issue", {}).get("pull_request", {}).get("url")
                     is_pr = True
-                elif event_payload.get("comment", {}).get("pull_request_url"): # for 'pull_request_review_comment
+                elif event_payload.get("comment", {}).get("pull_request_url"):  # for 'pull_request_review_comment
                     url = event_payload.get("comment", {}).get("pull_request_url")
                     is_pr = True
                     disable_eyes = True
@@ -138,11 +138,12 @@ async def run_action():
                     comment_id = event_payload.get("comment", {}).get("id")
                     provider = get_git_provider()(pr_url=url)
                     if is_pr:
-                        await PRAgent().handle_request(url, body,
-                                    notify=lambda: provider.add_eyes_reaction(comment_id, disable_eyes=disable_eyes))
+                        await PRAgent().handle_request(
+                            url, body, notify=lambda: provider.add_eyes_reaction(comment_id, disable_eyes=disable_eyes)
+                        )
                     else:
                         await PRAgent().handle_request(url, body)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(run_action())

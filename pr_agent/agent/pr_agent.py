@@ -3,7 +3,6 @@ from functools import partial
 
 from pr_agent.algo.ai_handlers.base_ai_handler import BaseAiHandler
 from pr_agent.algo.ai_handlers.litellm_ai_handler import LiteLLMAIHandler
-
 from pr_agent.algo.utils import update_settings_from_args
 from pr_agent.config_loader import get_settings
 from pr_agent.git_providers.utils import apply_repo_settings
@@ -49,8 +48,8 @@ commands = list(command2class.keys())
 
 class PRAgent:
     def __init__(self, ai_handler: partial[BaseAiHandler,] = LiteLLMAIHandler):
-        self.ai_handler = ai_handler # will be initialized in run_action
-        self.forbidden_cli_args = ['enable_auto_approval']
+        self.ai_handler = ai_handler  # will be initialized in run_action
+        self.forbidden_cli_args = ["enable_auto_approval"]
 
     async def handle_request(self, pr_url, request, notify=None) -> bool:
         # First, apply repo specific settings if exists
@@ -69,7 +68,9 @@ class PRAgent:
             for forbidden_arg in self.forbidden_cli_args:
                 for arg in args:
                     if forbidden_arg in arg:
-                        get_logger().error(f"CLI argument for param '{forbidden_arg}' is forbidden. Use instead a configuration file.")
+                        get_logger().error(
+                            f"CLI argument for param '{forbidden_arg}' is forbidden. Use instead a configuration file."
+                        )
                         return False
         args = update_settings_from_args(args)
 
@@ -98,10 +99,9 @@ class PRAgent:
 
 
 class PRAgentCLI:
-
     def __init__(self, ai_handler: partial[BaseAiHandler,] = LiteLLMAIHandler):
         self.ai_handler = ai_handler  # will be initialized in run_action
-        self.forbidden_cli_args = ['enable_auto_approval']
+        self.forbidden_cli_args = ["enable_auto_approval"]
 
     async def handle_request(self, pr_url, request, notify=None) -> bool:
         pass

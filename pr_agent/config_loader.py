@@ -5,31 +5,34 @@ from typing import Optional, Union
 from dynaconf import Dynaconf
 from starlette_context import context
 
-PR_AGENT_TOML_KEY = 'pr-agent'
+PR_AGENT_TOML_KEY = "pr-agent"
 
 current_dir = dirname(abspath(__file__))
 global_settings = Dynaconf(
     envvar_prefix=False,
     merge_enabled=True,
-    settings_files=[join(current_dir, f) for f in [
-        "settings/.secrets.toml",
-        "settings/configuration.toml",
-        "settings/ignore.toml",
-        "settings/language_extensions.toml",
-        "settings/pr_reviewer_prompts.toml",
-        "settings/pr_questions_prompts.toml",
-        "settings/pr_line_questions_prompts.toml",
-        "settings/pr_description_prompts.toml",
-        "settings/pr_code_suggestions_prompts.toml",
-        "settings/pr_code_suggestions_reflect_prompts.toml",
-        "settings/pr_sort_code_suggestions_prompts.toml",
-        "settings/pr_information_from_user_prompts.toml",
-        "settings/pr_update_changelog_prompts.toml",
-        "settings/pr_custom_labels.toml",
-        "settings/pr_add_docs.toml",
-        "settings_prod/.secrets.toml",
-        "settings/custom_labels.toml"
-    ]]
+    settings_files=[
+        join(current_dir, f)
+        for f in [
+            "settings/.secrets.toml",
+            "settings/configuration.toml",
+            "settings/ignore.toml",
+            "settings/language_extensions.toml",
+            "settings/pr_reviewer_prompts.toml",
+            "settings/pr_questions_prompts.toml",
+            "settings/pr_line_questions_prompts.toml",
+            "settings/pr_description_prompts.toml",
+            "settings/pr_code_suggestions_prompts.toml",
+            "settings/pr_code_suggestions_reflect_prompts.toml",
+            "settings/pr_sort_code_suggestions_prompts.toml",
+            "settings/pr_information_from_user_prompts.toml",
+            "settings/pr_update_changelog_prompts.toml",
+            "settings/pr_custom_labels.toml",
+            "settings/pr_add_docs.toml",
+            "settings_prod/.secrets.toml",
+            "settings/custom_labels.toml",
+        ]
+    ],
 )
 
 
@@ -41,7 +44,7 @@ def get_settings():
 
 
 # Add local configuration from pyproject.toml of the project being reviewed
-def _find_repository_root(start_folder: str = 'data') -> Union[Path, None]:
+def _find_repository_root(start_folder: str = "data") -> Union[Path, None]:
     """
     Identify project root directory by recursively searching for the .git directory in the parent directories.
     """
@@ -68,4 +71,4 @@ def _find_pyproject() -> Optional[Path]:
 
 pyproject_path = _find_pyproject()
 if pyproject_path is not None:
-    get_settings().load_file(pyproject_path, env=f'tool.{PR_AGENT_TOML_KEY}')
+    get_settings().load_file(pyproject_path, env=f"tool.{PR_AGENT_TOML_KEY}")

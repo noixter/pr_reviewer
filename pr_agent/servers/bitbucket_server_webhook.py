@@ -19,9 +19,7 @@ from pr_agent.servers.utils import verify_signature
 router = APIRouter()
 
 
-def handle_request(
-    background_tasks: BackgroundTasks, url: str, body: str, log_context: dict
-):
+def handle_request(background_tasks: BackgroundTasks, url: str, body: str, log_context: dict):
     log_context["action"] = body
     log_context["api_url"] = url
     with get_logger().contextualize(**log_context):
@@ -60,9 +58,7 @@ async def handle_webhook(background_tasks: BackgroundTasks, request: Request):
         )
 
     handle_request(background_tasks, pr_url, body, log_context)
-    return JSONResponse(
-        status_code=status.HTTP_200_OK, content=jsonable_encoder({"message": "success"})
-    )
+    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder({"message": "success"}))
 
 
 @router.get("/")

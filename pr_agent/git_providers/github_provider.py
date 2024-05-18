@@ -1,5 +1,5 @@
-import time
 import hashlib
+import time
 from datetime import datetime
 from typing import Optional, Tuple
 from urllib.parse import urlparse
@@ -8,13 +8,14 @@ from github import AppAuthentication, Auth, Github, GithubException
 from retry import retry
 from starlette_context import context
 
+from pr_agent.algo.types import EDIT_TYPE, FilePatchInfo
+
 from ..algo.language_handler import is_valid_file
-from ..algo.utils import load_large_diff, clip_tokens, find_line_number_of_relevant_line_in_file
+from ..algo.utils import clip_tokens, find_line_number_of_relevant_line_in_file, load_large_diff
 from ..config_loader import get_settings
 from ..log import get_logger
 from ..servers.utils import RateLimitExceeded
 from .git_provider import GitProvider, IncrementalPR
-from pr_agent.algo.types import EDIT_TYPE, FilePatchInfo
 
 
 class GithubProvider(GitProvider):
@@ -25,7 +26,9 @@ class GithubProvider(GitProvider):
         except Exception:
             self.installation_id = None
         self.base_url = get_settings().get("GITHUB.BASE_URL", "https://api.github.com").rstrip("/")
-        self.base_url_html = self.base_url.split("api/")[0].rstrip("/") if "api/" in self.base_url else "https://github.com"
+        self.base_url_html = (
+            self.base_url.split("api/")[0].rstrip("/") if "api/" in self.base_url else "https://github.com"
+        )
         self.github_client = self._get_github_client()
         self.repo = None
         self.pr_num = None
@@ -34,14 +37,16 @@ class GithubProvider(GitProvider):
         self.diff_files = None
         self.git_files = None
         self.incremental = incremental
-        if pr_url and 'pull' in pr_url:
+        if pr_url and "pull" in pr_url:
             self.set_pr(pr_url)
             self.pr_commits = list(self.pr.get_commits())
             if self.incremental.is_incremental:
                 self.unreviewed_files_set = dict()
                 self.get_incremental_commits()
             self.last_commit_id = self.pr_commits[-1]
-            self.pr_url = self.get_pr_url() # pr_url for github actions can be as api.github.com, so we need to get the url from the pr object
+            self.pr_url = (
+                self.get_pr_url()
+            )  # pr_url for github actions can be as api.github.com, so we need to get the url from the pr object
         else:
             self.pr_commits = None
 
@@ -120,8 +125,9 @@ class GithubProvider(GitProvider):
         else:
             return -1
 
-    @retry(exceptions=RateLimitExceeded,
-           tries=get_settings().github.ratelimit_retries, delay=2, backoff=2, jitter=(1, 3))
+    @retry(
+        exceptions=RateLimitExceeded, tries=get_settings().github.ratelimit_retries, delay=2, backoff=2, jitter=(1, 3)
+    )
     def get_diff_files(self) -> list[FilePatchInfo]:
         """
         Retrieves the list of files that have been modified, added, deleted, or renamed in a pull request in GitHub,
@@ -161,13 +167,13 @@ class GithubProvider(GitProvider):
                     if not patch:
                         patch = load_large_diff(file.filename, new_file_content_str, original_file_content_str)
 
-                if file.status == 'added':
+                if file.status == "added":
                     edit_type = EDIT_TYPE.ADDED
-                elif file.status == 'removed':
+                elif file.status == "removed":
                     edit_type = EDIT_TYPE.DELETED
-                elif file.status == 'renamed':
+                elif file.status == "renamed":
                     edit_type = EDIT_TYPE.RENAMED
-                elif file.status == 'modified':
+                elif file.status == "modified":
                     edit_type = EDIT_TYPE.MODIFIED
                 else:
                     get_logger().error(f"Unknown edit type: {file.status}")
@@ -175,12 +181,17 @@ class GithubProvider(GitProvider):
 
                 # count number of lines added and removed
                 patch_lines = patch.splitlines(keepends=True)
-                num_plus_lines = len([line for line in patch_lines if line.startswith('+')])
-                num_minus_lines = len([line for line in patch_lines if line.startswith('-')])
-                file_patch_canonical_structure = FilePatchInfo(original_file_content_str, new_file_content_str, patch,
-                                                               file.filename, edit_type=edit_type,
-                                                               num_plus_lines=num_plus_lines,
-                                                               num_minus_lines=num_minus_lines,)
+                num_plus_lines = len([line for line in patch_lines if line.startswith("+")])
+                num_minus_lines = len([line for line in patch_lines if line.startswith("-")])
+                file_patch_canonical_structure = FilePatchInfo(
+                    original_file_content_str,
+                    new_file_content_str,
+                    patch,
+                    file.filename,
+                    edit_type=edit_type,
+                    num_plus_lines=num_plus_lines,
+                    num_minus_lines=num_minus_lines,
+                )
                 diff_files.append(file_patch_canonical_structure)
 
             self.diff_files = diff_files
@@ -204,11 +215,9 @@ class GithubProvider(GitProvider):
     def get_comment_url(self, comment) -> str:
         return comment.html_url
 
-    def publish_persistent_comment(self, pr_comment: str,
-                                   initial_header: str,
-                                   update_header: bool = True,
-                                   name='review',
-                                   final_update_message=True):
+    def publish_persistent_comment(
+        self, pr_comment: str, initial_header: str, update_header: bool = True, name="review", final_update_message=True
+    ):
         prev_comments = list(self.pr.get_issue_comments())
         for comment in prev_comments:
             body = comment.body
@@ -216,7 +225,9 @@ class GithubProvider(GitProvider):
                 latest_commit_url = self.get_latest_commit_url()
                 comment_url = self.get_comment_url(comment)
                 if update_header:
-                    updated_header = f"{initial_header}\n\n### ({name.capitalize()} updated until commit {latest_commit_url})\n"
+                    updated_header = (
+                        f"{initial_header}\n\n### ({name.capitalize()} updated until commit {latest_commit_url})\n"
+                    )
                     pr_comment_updated = pr_comment.replace(initial_header, updated_header)
                 else:
                     pr_comment_updated = pr_comment
@@ -224,7 +235,8 @@ class GithubProvider(GitProvider):
                 response = comment.edit(pr_comment_updated)
                 if final_update_message:
                     self.publish_comment(
-                        f"**[Persistent {name}]({comment_url})** updated to latest commit {latest_commit_url}")
+                        f"**[Persistent {name}]({comment_url})** updated to latest commit {latest_commit_url}"
+                    )
                 return
         self.publish_comment(pr_comment)
 
@@ -237,7 +249,7 @@ class GithubProvider(GitProvider):
         if hasattr(response, "user") and hasattr(response.user, "login"):
             self.github_user_id = response.user.login
         response.is_temporary = is_temporary
-        if not hasattr(self.pr, 'comments_list'):
+        if not hasattr(self.pr, "comments_list"):
             self.pr.comments_list = []
         self.pr.comments_list.append(response)
         return response
@@ -245,13 +257,12 @@ class GithubProvider(GitProvider):
     def publish_inline_comment(self, body: str, relevant_file: str, relevant_line_in_file: str):
         self.publish_inline_comments([self.create_inline_comment(body, relevant_file, relevant_line_in_file)])
 
-
-    def create_inline_comment(self, body: str, relevant_file: str, relevant_line_in_file: str,
-                              absolute_position: int = None):
-        position, absolute_position = find_line_number_of_relevant_line_in_file(self.diff_files,
-                                                                                relevant_file.strip('`'),
-                                                                                relevant_line_in_file,
-                                                                                absolute_position)
+    def create_inline_comment(
+        self, body: str, relevant_file: str, relevant_line_in_file: str, absolute_position: int = None
+    ):
+        position, absolute_position = find_line_number_of_relevant_line_in_file(
+            self.diff_files, relevant_file.strip("`"), relevant_line_in_file, absolute_position
+        )
         if position == -1:
             if get_settings().config.verbosity_level >= 2:
                 get_logger().info(f"Could not find position for {relevant_file} {relevant_line_in_file}")
@@ -269,11 +280,14 @@ class GithubProvider(GitProvider):
             if get_settings().config.verbosity_level >= 2:
                 get_logger().error(f"Failed to publish inline comments")
 
-            if (getattr(e, "status", None) == 422
-                    and get_settings().github.publish_inline_comments_fallback_with_verification and not disable_fallback):
+            if (
+                getattr(e, "status", None) == 422
+                and get_settings().github.publish_inline_comments_fallback_with_verification
+                and not disable_fallback
+            ):
                 pass  # continue to try _publish_inline_comments_fallback_with_verification
             else:
-                raise e # will end up with publishing the comments one by one
+                raise e  # will end up with publishing the comments one by one
 
             try:
                 self._publish_inline_comments_fallback_with_verification(comments)
@@ -300,7 +314,8 @@ class GithubProvider(GitProvider):
         # try to publish one by one the invalid comments as a one-line code comment
         if invalid_comments and get_settings().github.try_fix_invalid_inline_comments:
             fixed_comments_as_one_liner = self._try_fix_invalid_inline_comments(
-                [comment for comment, _ in invalid_comments])
+                [comment for comment, _ in invalid_comments]
+            )
             for comment in fixed_comments_as_one_liner:
                 try:
                     self.publish_inline_comments([comment], disable_fallback=True)
@@ -316,8 +331,7 @@ class GithubProvider(GitProvider):
         try:
             # event ="" # By leaving this blank, you set the review action state to PENDING
             input = dict(commit_id=self.last_commit_id.sha, comments=[comment])
-            headers, data = self.pr._requester.requestJsonAndCheck(
-                "POST", f"{self.pr.url}/reviews", input=input)
+            headers, data = self.pr._requester.requestJsonAndCheck("POST", f"{self.pr.url}/reviews", input=input)
             pending_review_id = data["id"]
             is_verified = True
         except Exception as err:
@@ -351,6 +365,7 @@ class GithubProvider(GitProvider):
         This is a best-effort attempt to fix invalid comments, and should be verified accordingly.
         """
         import copy
+
         fixed_comments = []
         for comment in invalid_comments:
             try:
@@ -376,22 +391,25 @@ class GithubProvider(GitProvider):
         """
         post_parameters_list = []
         for suggestion in code_suggestions:
-            body = suggestion['body']
-            relevant_file = suggestion['relevant_file']
-            relevant_lines_start = suggestion['relevant_lines_start']
-            relevant_lines_end = suggestion['relevant_lines_end']
+            body = suggestion["body"]
+            relevant_file = suggestion["relevant_file"]
+            relevant_lines_start = suggestion["relevant_lines_start"]
+            relevant_lines_end = suggestion["relevant_lines_end"]
 
             if not relevant_lines_start or relevant_lines_start == -1:
                 if get_settings().config.verbosity_level >= 2:
                     get_logger().exception(
-                        f"Failed to publish code suggestion, relevant_lines_start is {relevant_lines_start}")
+                        f"Failed to publish code suggestion, relevant_lines_start is {relevant_lines_start}"
+                    )
                 continue
 
             if relevant_lines_end < relevant_lines_start:
                 if get_settings().config.verbosity_level >= 2:
-                    get_logger().exception(f"Failed to publish code suggestion, "
-                                      f"relevant_lines_end is {relevant_lines_end} and "
-                                      f"relevant_lines_start is {relevant_lines_start}")
+                    get_logger().exception(
+                        f"Failed to publish code suggestion, "
+                        f"relevant_lines_end is {relevant_lines_end} and "
+                        f"relevant_lines_start is {relevant_lines_start}"
+                    )
                 continue
 
             if relevant_lines_end > relevant_lines_start:
@@ -426,15 +444,16 @@ class GithubProvider(GitProvider):
         try:
             # self.pr.get_issue_comment(comment_id).edit(body)
             headers, data_patch = self.pr._requester.requestJsonAndCheck(
-                "POST", f"{self.base_url}/repos/{self.repo}/pulls/{self.pr_num}/comments/{comment_id}/replies",
-                input={"body": body}
+                "POST",
+                f"{self.base_url}/repos/{self.repo}/pulls/{self.pr_num}/comments/{comment_id}/replies",
+                input={"body": body},
             )
         except Exception as e:
             get_logger().exception(f"Failed to reply comment, error: {e}")
 
     def remove_initial_comment(self):
         try:
-            for comment in getattr(self.pr, 'comments_list', []):
+            for comment in getattr(self.pr, "comments_list", []):
                 if comment.is_temporary:
                     self.remove_comment(comment)
         except Exception as e:
@@ -462,7 +481,7 @@ class GithubProvider(GitProvider):
     def get_user_id(self):
         if not self.github_user_id:
             try:
-                self.github_user_id = self.github_client.get_user().raw_data['login']
+                self.github_user_id = self.github_client.get_user().raw_data["login"]
             except Exception as e:
                 self.github_user_id = ""
                 # logging.exception(f"Failed to get user id, error: {e}")
@@ -471,7 +490,7 @@ class GithubProvider(GitProvider):
     def get_notifications(self, since: datetime):
         deployment_type = get_settings().get("GITHUB.DEPLOYMENT_TYPE", "user")
 
-        if deployment_type != 'user':
+        if deployment_type != "user":
             raise ValueError("Deployment mode must be set to 'user' to get notifications")
 
         notifications = self.github_client.get_user().get_notifications(since=since)
@@ -495,8 +514,9 @@ class GithubProvider(GitProvider):
             return None
         try:
             headers, data_patch = self.pr._requester.requestJsonAndCheck(
-                "POST", f"{self.base_url}/repos/{self.repo}/issues/comments/{issue_comment_id}/reactions",
-                input={"content": "eyes"}
+                "POST",
+                f"{self.base_url}/repos/{self.repo}/issues/comments/{issue_comment_id}/reactions",
+                input={"content": "eyes"},
             )
             return data_patch.get("id", None)
         except Exception as e:
@@ -508,7 +528,7 @@ class GithubProvider(GitProvider):
             # self.pr.get_issue_comment(issue_comment_id).delete_reaction(reaction_id)
             headers, data_patch = self.pr._requester.requestJsonAndCheck(
                 "DELETE",
-                f"{self.base_url}/repos/{self.repo}/issues/comments/{issue_comment_id}/reactions/{reaction_id}"
+                f"{self.base_url}/repos/{self.repo}/issues/comments/{issue_comment_id}/reactions/{reaction_id}",
             )
             return True
         except Exception as e:
@@ -519,24 +539,24 @@ class GithubProvider(GitProvider):
     def _parse_pr_url(pr_url: str) -> Tuple[str, int]:
         parsed_url = urlparse(pr_url)
 
-        if 'github.com' not in parsed_url.netloc:
+        if "github.com" not in parsed_url.netloc:
             raise ValueError("The provided URL is not a valid GitHub URL")
 
-        path_parts = parsed_url.path.strip('/').split('/')
-        if 'api.github.com' in parsed_url.netloc:
-            if len(path_parts) < 5 or path_parts[3] != 'pulls':
+        path_parts = parsed_url.path.strip("/").split("/")
+        if "api.github.com" in parsed_url.netloc:
+            if len(path_parts) < 5 or path_parts[3] != "pulls":
                 raise ValueError("The provided URL does not appear to be a GitHub PR URL")
-            repo_name = '/'.join(path_parts[1:3])
+            repo_name = "/".join(path_parts[1:3])
             try:
                 pr_number = int(path_parts[4])
             except ValueError as e:
                 raise ValueError("Unable to convert PR number to integer") from e
             return repo_name, pr_number
 
-        if len(path_parts) < 4 or path_parts[2] != 'pull':
+        if len(path_parts) < 4 or path_parts[2] != "pull":
             raise ValueError("The provided URL does not appear to be a GitHub PR URL")
 
-        repo_name = '/'.join(path_parts[:2])
+        repo_name = "/".join(path_parts[:2])
         try:
             pr_number = int(path_parts[3])
         except ValueError as e:
@@ -548,24 +568,24 @@ class GithubProvider(GitProvider):
     def _parse_issue_url(issue_url: str) -> Tuple[str, int]:
         parsed_url = urlparse(issue_url)
 
-        if 'github.com' not in parsed_url.netloc:
+        if "github.com" not in parsed_url.netloc:
             raise ValueError("The provided URL is not a valid GitHub URL")
 
-        path_parts = parsed_url.path.strip('/').split('/')
-        if 'api.github.com' in parsed_url.netloc:
-            if len(path_parts) < 5 or path_parts[3] != 'issues':
+        path_parts = parsed_url.path.strip("/").split("/")
+        if "api.github.com" in parsed_url.netloc:
+            if len(path_parts) < 5 or path_parts[3] != "issues":
                 raise ValueError("The provided URL does not appear to be a GitHub ISSUE URL")
-            repo_name = '/'.join(path_parts[1:3])
+            repo_name = "/".join(path_parts[1:3])
             try:
                 issue_number = int(path_parts[4])
             except ValueError as e:
                 raise ValueError("Unable to convert issue number to integer") from e
             return repo_name, issue_number
 
-        if len(path_parts) < 4 or path_parts[2] != 'issues':
+        if len(path_parts) < 4 or path_parts[2] != "issues":
             raise ValueError("The provided URL does not appear to be a GitHub PR issue")
 
-        repo_name = '/'.join(path_parts[:2])
+        repo_name = "/".join(path_parts[:2])
         try:
             issue_number = int(path_parts[3])
         except ValueError as e:
@@ -576,7 +596,7 @@ class GithubProvider(GitProvider):
     def _get_github_client(self):
         deployment_type = get_settings().get("GITHUB.DEPLOYMENT_TYPE", "user")
 
-        if deployment_type == 'app':
+        if deployment_type == "app":
             try:
                 private_key = get_settings().github.private_key
                 app_id = get_settings().github.app_id
@@ -584,51 +604,42 @@ class GithubProvider(GitProvider):
                 raise ValueError("GitHub app ID and private key are required when using GitHub app deployment") from e
             if not self.installation_id:
                 raise ValueError("GitHub app installation ID is required when using GitHub app deployment")
-            auth = AppAuthentication(app_id=app_id, private_key=private_key,
-                                     installation_id=self.installation_id)
+            auth = AppAuthentication(app_id=app_id, private_key=private_key, installation_id=self.installation_id)
             return Github(app_auth=auth, base_url=self.base_url)
 
-        if deployment_type == 'user':
+        if deployment_type == "user":
             try:
                 token = get_settings().github.user_token
             except AttributeError as e:
                 raise ValueError(
                     "GitHub token is required when using user deployment. See: "
-                    "https://github.com/Codium-ai/pr-agent#method-2-run-from-source") from e
+                    "https://github.com/Codium-ai/pr-agent#method-2-run-from-source"
+                ) from e
             return Github(auth=Auth.Token(token), base_url=self.base_url)
 
     def _get_repo(self):
-        if hasattr(self, 'repo_obj') and \
-                hasattr(self.repo_obj, 'full_name') and \
-                self.repo_obj.full_name == self.repo:
+        if hasattr(self, "repo_obj") and hasattr(self.repo_obj, "full_name") and self.repo_obj.full_name == self.repo:
             return self.repo_obj
         else:
             self.repo_obj = self.github_client.get_repo(self.repo)
             return self.repo_obj
-
 
     def _get_pr(self):
         return self._get_repo().get_pull(self.pr_num)
 
     def get_pr_file_content(self, file_path: str, branch: str) -> str:
         try:
-            file_content_str = str(
-                self._get_repo()
-                .get_contents(file_path, ref=branch)
-                .decoded_content.decode()
-            )
+            file_content_str = str(self._get_repo().get_contents(file_path, ref=branch).decoded_content.decode())
         except Exception:
             file_content_str = ""
         return file_content_str
 
-    def create_or_update_pr_file(
-        self, file_path: str, branch: str, contents="", message=""
-    ) -> None:
+    def create_or_update_pr_file(self, file_path: str, branch: str, contents="", message="") -> None:
         try:
             file_obj = self._get_repo().get_contents(file_path, ref=branch)
-            sha1=file_obj.sha
+            sha1 = file_obj.sha
         except Exception:
-            sha1=""
+            sha1 = ""
         self.repo_obj.update_file(
             path=file_path,
             message=message,
@@ -642,9 +653,14 @@ class GithubProvider(GitProvider):
 
     def publish_labels(self, pr_types):
         try:
-            label_color_map = {"Bug fix": "1d76db", "Tests": "e99695", "Bug fix with tests": "c5def5",
-                               "Enhancement": "bfd4f2", "Documentation": "d4c5f9",
-                               "Other": "d1bcf9"}
+            label_color_map = {
+                "Bug fix": "1d76db",
+                "Tests": "e99695",
+                "Bug fix with tests": "c5def5",
+                "Enhancement": "bfd4f2",
+                "Documentation": "d4c5f9",
+                "Other": "d1bcf9",
+            }
             post_parameters = []
             for p in pr_types:
                 color = label_color_map.get(p, "d1bcf9")  # default to "Other" color
@@ -658,12 +674,11 @@ class GithubProvider(GitProvider):
     def get_pr_labels(self, update=False):
         try:
             if not update:
-                labels =self.pr.labels
+                labels = self.pr.labels
                 return [label.name for label in labels]
-            else: # obtain the latest labels. Maybe they changed while the AI was running
-                headers, labels = self.pr._requester.requestJsonAndCheck(
-                    "GET", f"{self.pr.issue_url}/labels")
-                return [label['name'] for label in labels]
+            else:  # obtain the latest labels. Maybe they changed while the AI was running
+                headers, labels = self.pr._requester.requestJsonAndCheck("GET", f"{self.pr.issue_url}/labels")
+                return [label["name"] for label in labels]
 
         except Exception as e:
             get_logger().exception(f"Failed to get labels, error: {e}")
@@ -693,13 +708,14 @@ class GithubProvider(GitProvider):
 
     def generate_link_to_relevant_line_number(self, suggestion) -> str:
         try:
-            relevant_file = suggestion['relevant_file'].strip('`').strip("'").strip('\n')
-            relevant_line_str = suggestion['relevant_line'].strip('\n')
+            relevant_file = suggestion["relevant_file"].strip("`").strip("'").strip("\n")
+            relevant_line_str = suggestion["relevant_line"].strip("\n")
             if not relevant_line_str:
                 return ""
 
-            position, absolute_position = find_line_number_of_relevant_line_in_file \
-                (self.diff_files, relevant_file, relevant_line_str)
+            position, absolute_position = find_line_number_of_relevant_line_in_file(
+                self.diff_files, relevant_file, relevant_line_str
+            )
 
             if absolute_position != -1:
                 # # link to right file only
@@ -707,7 +723,7 @@ class GithubProvider(GitProvider):
                 #        + "#" + f"L{absolute_position}"
 
                 # link to diff
-                sha_file = hashlib.sha256(relevant_file.encode('utf-8')).hexdigest()
+                sha_file = hashlib.sha256(relevant_file.encode("utf-8")).hexdigest()
                 link = f"{self.base_url_html}/{self.repo}/pull/{self.pr_num}/files#diff-{sha_file}R{absolute_position}"
                 return link
         except Exception as e:
@@ -717,7 +733,7 @@ class GithubProvider(GitProvider):
         return ""
 
     def get_line_link(self, relevant_file: str, relevant_line_start: int, relevant_line_end: int = None) -> str:
-        sha_file = hashlib.sha256(relevant_file.encode('utf-8')).hexdigest()
+        sha_file = hashlib.sha256(relevant_file.encode("utf-8")).hexdigest()
         if relevant_line_start == -1:
             link = f"{self.base_url_html}/{self.repo}/pull/{self.pr_num}/files#diff-{sha_file}"
         elif relevant_line_end:
@@ -725,7 +741,6 @@ class GithubProvider(GitProvider):
         else:
             link = f"{self.base_url_html}/{self.repo}/pull/{self.pr_num}/files#diff-{sha_file}R{relevant_line_start}"
         return link
-
 
     def get_pr_id(self):
         try:

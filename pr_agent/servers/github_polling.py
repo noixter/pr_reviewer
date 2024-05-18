@@ -15,7 +15,7 @@ NOTIFICATION_URL = "https://api.github.com/notifications"
 def now() -> str:
     """
     Get the current UTC time in ISO 8601 format.
-    
+
     Returns:
         str: The current UTC time in ISO 8601 format.
     """
@@ -40,10 +40,10 @@ async def polling_loop():
         deployment_type = get_settings().github.deployment_type
         token = get_settings().github.user_token
     except AttributeError:
-        deployment_type = 'none'
+        deployment_type = "none"
         token = None
 
-    if deployment_type != 'user':
+    if deployment_type != "user":
         raise ValueError("Deployment mode must be set to 'user' to get notifications")
     if not token:
         raise ValueError("User token must be set to get notifications")
@@ -52,13 +52,8 @@ async def polling_loop():
         while True:
             try:
                 await asyncio.sleep(5)
-                headers = {
-                    "Accept": "application/vnd.github.v3+json",
-                    "Authorization": f"Bearer {token}"
-                }
-                params = {
-                    "participating": "true"
-                }
+                headers = {"Accept": "application/vnd.github.v3+json", "Authorization": f"Bearer {token}"}
+                params = {"participating": "true"}
                 if since[0]:
                     params["since"] = since[0]
                 if last_modified[0]:
@@ -66,41 +61,47 @@ async def polling_loop():
 
                 async with session.get(NOTIFICATION_URL, headers=headers, params=params) as response:
                     if response.status == 200:
-                        if 'Last-Modified' in response.headers:
-                            last_modified[0] = response.headers['Last-Modified']
+                        if "Last-Modified" in response.headers:
+                            last_modified[0] = response.headers["Last-Modified"]
                             since[0] = None
                         notifications = await response.json()
                         if not notifications:
                             continue
                         for notification in notifications:
-                            handled_ids.add(notification['id'])
-                            if 'reason' in notification and notification['reason'] == 'mention':
-                                if 'subject' in notification and notification['subject']['type'] == 'PullRequest':
-                                    pr_url = notification['subject']['url']
-                                    latest_comment = notification['subject']['latest_comment_url']
+                            handled_ids.add(notification["id"])
+                            if "reason" in notification and notification["reason"] == "mention":
+                                if "subject" in notification and notification["subject"]["type"] == "PullRequest":
+                                    pr_url = notification["subject"]["url"]
+                                    latest_comment = notification["subject"]["latest_comment_url"]
                                     async with session.get(latest_comment, headers=headers) as comment_response:
                                         if comment_response.status == 200:
                                             comment = await comment_response.json()
-                                            if 'id' in comment:
-                                                if comment['id'] in handled_ids:
+                                            if "id" in comment:
+                                                if comment["id"] in handled_ids:
                                                     continue
                                                 else:
-                                                    handled_ids.add(comment['id'])
-                                            if 'user' in comment and 'login' in comment['user']:
-                                                if comment['user']['login'] == user_id:
+                                                    handled_ids.add(comment["id"])
+                                            if "user" in comment and "login" in comment["user"]:
+                                                if comment["user"]["login"] == user_id:
                                                     continue
-                                            comment_body = comment['body'] if 'body' in comment else ''
-                                            commenter_github_user = comment['user']['login'] \
-                                                if 'user' in comment else ''
-                                            get_logger().info(f"Commenter: {commenter_github_user}\nComment: {comment_body}")
+                                            comment_body = comment["body"] if "body" in comment else ""
+                                            commenter_github_user = (
+                                                comment["user"]["login"] if "user" in comment else ""
+                                            )
+                                            get_logger().info(
+                                                f"Commenter: {commenter_github_user}\nComment: {comment_body}"
+                                            )
                                             user_tag = "@" + user_id
                                             if user_tag not in comment_body:
                                                 continue
                                             rest_of_comment = comment_body.split(user_tag)[1].strip()
-                                            comment_id = comment['id']
+                                            comment_id = comment["id"]
                                             git_provider.set_pr(pr_url)
-                                            success = await agent.handle_request(pr_url, rest_of_comment,
-                                                                                 notify=lambda: git_provider.add_eyes_reaction(comment_id))  # noqa E501
+                                            success = await agent.handle_request(
+                                                pr_url,
+                                                rest_of_comment,
+                                                notify=lambda: git_provider.add_eyes_reaction(comment_id),
+                                            )  # noqa E501
                                             if not success:
                                                 git_provider.set_pr(pr_url)
 
@@ -111,5 +112,5 @@ async def polling_loop():
                 get_logger().error(f"Exception during processing of a notification: {e}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(polling_loop())
