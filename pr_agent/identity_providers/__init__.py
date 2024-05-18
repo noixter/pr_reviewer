@@ -1,9 +1,7 @@
 from pr_agent.config_loader import get_settings
 from pr_agent.identity_providers.default_identity_provider import DefaultIdentityProvider
 
-_IDENTITY_PROVIDERS = {
-    'default': DefaultIdentityProvider
-}
+_IDENTITY_PROVIDERS = {"default": DefaultIdentityProvider}
 
 
 def get_identity_provider():

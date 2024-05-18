@@ -1,5 +1,5 @@
 from pr_agent.config_loader import get_settings
-from pr_agent.git_providers import get_git_provider, GithubProvider
+from pr_agent.git_providers import GithubProvider, get_git_provider
 from pr_agent.log import get_logger
 
 
@@ -11,15 +11,18 @@ class PRHelpMessage:
         try:
             if not self.git_provider.is_supported("gfm_markdown"):
                 self.git_provider.publish_comment(
-                    "The `Help` tool requires gfm markdown, which is not supported by your code platform.")
+                    "The `Help` tool requires gfm markdown, which is not supported by your code platform."
+                )
                 return
 
-            get_logger().info('Getting PR Help Message...')
-            relevant_configs = {'pr_help': dict(get_settings().pr_help),
-                                'config': dict(get_settings().config)}
+            get_logger().info("Getting PR Help Message...")
+            relevant_configs = {"pr_help": dict(get_settings().pr_help), "config": dict(get_settings().config)}
             get_logger().debug("Relevant configs", artifacts=relevant_configs)
             pr_comment = "## PR Agent Walkthrough 🤖\n\n"
-            pr_comment += "Welcome to the PR Agent, an AI-powered tool for automated pull request analysis, feedback, suggestions and more."""
+            pr_comment += (
+                "Welcome to the PR Agent, an AI-powered tool for automated pull request analysis, feedback, suggestions and more."
+                ""
+            )
             pr_comment += "\n\nHere is a list of tools you can use to interact with the PR Agent:\n"
             base_path = "https://pr-agent-docs.codium.ai/tools"
 
@@ -40,20 +43,26 @@ class PRHelpMessage:
 
             descriptions = []
             descriptions.append("Generates PR description - title, type, summary, code walkthrough and labels")
-            descriptions.append("Adjustable feedback about the PR, possible issues, security concerns, review effort and more")
+            descriptions.append(
+                "Adjustable feedback about the PR, possible issues, security concerns, review effort and more"
+            )
             descriptions.append("Code suggestions for improving the PR")
             descriptions.append("Automatically updates the changelog")
             descriptions.append("Generates documentation to methods/functions/classes that changed in the PR")
             descriptions.append("Generates unit tests for a specific component, based on the PR code change")
             descriptions.append("Code suggestions for a specific component that changed in the PR")
-            descriptions.append("Identifies code components that changed in the PR, and enables to interactively generate tests, docs, and code suggestions for each component")
+            descriptions.append(
+                "Identifies code components that changed in the PR, and enables to interactively generate tests, docs, and code suggestions for each component"
+            )
             descriptions.append("Answering free-text questions about the PR")
             descriptions.append("Generates custom labels for the PR, based on specific guidelines defined by the user")
             descriptions.append("Generates feedback and analysis for a failed CI job")
-            descriptions.append("Generates custom suggestions for improving the PR code, based only on specific guidelines defined by the user")
+            descriptions.append(
+                "Generates custom suggestions for improving the PR code, based only on specific guidelines defined by the user"
+            )
             descriptions.append("Automatically retrieves and presents similar issues")
 
-            commands  =[]
+            commands = []
             commands.append("`/describe`")
             commands.append("`/review`")
             commands.append("`/improve`")

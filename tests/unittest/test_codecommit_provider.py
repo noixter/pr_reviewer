@@ -1,9 +1,9 @@
-import pytest
 from unittest.mock import patch
-from pr_agent.git_providers.codecommit_provider import CodeCommitFile
-from pr_agent.git_providers.codecommit_provider import CodeCommitProvider
-from pr_agent.git_providers.codecommit_provider import PullRequestCCMimic
+
+import pytest
+
 from pr_agent.algo.types import EDIT_TYPE, FilePatchInfo
+from pr_agent.git_providers.codecommit_provider import CodeCommitFile, CodeCommitProvider, PullRequestCCMimic
 
 
 class TestCodeCommitFile:
@@ -44,7 +44,9 @@ class TestCodeCommitProvider:
 
     def test_parse_pr_url(self):
         # Test that the _parse_pr_url() function can extract the repo name and PR number from a CodeCommit URL
-        url = "https://us-east-1.console.aws.amazon.com/codesuite/codecommit/repositories/my_test_repo/pull-requests/321"
+        url = (
+            "https://us-east-1.console.aws.amazon.com/codesuite/codecommit/repositories/my_test_repo/pull-requests/321"
+        )
         repo_name, pr_number = CodeCommitProvider._parse_pr_url(url)
         assert repo_name == "my_test_repo"
         assert pr_number == 321

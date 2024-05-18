@@ -2,7 +2,7 @@
 model="gpt-4-turbo-2024-04-09"
 model_turbo="gpt-4-turbo-2024-04-09"
 fallback_models=["gpt-4-0125-preview"]
-git_provider="github"
+git_provider="local"
 publish_output=true
 publish_output_progress=true
 verbosity_level=0 # 0,1,2
@@ -16,7 +16,7 @@ max_commits_tokens = 500
 max_model_tokens = 32000 # Limits the maximum number of tokens that can be used by any model, regardless of the model's default capabilities.
 patch_extra_lines = 1
 secret_provider="google_cloud_storage"
-cli_mode=false
+cli_mode=true
 ai_disclaimer_title=""  # Pro feature, title for a collapsible disclaimer to AI outputs
 ai_disclaimer=""  # Pro feature, full text for the AI disclaimer
 
@@ -78,12 +78,12 @@ enable_help_text=false
 
 
 [pr_code_suggestions] # /improve #
-max_context_tokens=8000
+max_context_tokens=32000
 num_code_suggestions=4
 commitable_code_suggestions = false
 extra_instructions = ""
 rank_suggestions = false
-enable_help_text=false
+enable_help_text = false
 persistent_comment=false
 # suggestions scoring
 self_reflect_on_suggestions=true
@@ -133,7 +133,7 @@ enable_help_text=true
 
 [github]
 # The type of deployment to create. Valid values are 'app' or 'user'.
-deployment_type = "user"
+deployment_type = "app"
 ratelimit_retries = 5
 base_url = "https://api.github.com"
 publish_inline_comments_fallback_with_verification = true
@@ -186,8 +186,9 @@ pr_commands = [
 
 [local]
 # LocalGitProvider settings - uncomment to use paths other than default
-# description_path= "path/to/description.md"
-# review_path= "path/to/review.md"
+description_path= "/app/data/describe.md"
+review_path= "/app/data/review.md"
+suggestion_path = '/app/data/suggestions.md'
 
 [gerrit]
 # endpoint to the gerrit service
